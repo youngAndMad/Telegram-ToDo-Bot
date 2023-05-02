@@ -11,7 +11,7 @@
       "id": "896358456:896358456",
       "data": {
         "__scenes": {},
-        "type": "create"
+        "type": "remove"
       }
     },
     {
@@ -26,6 +26,13 @@
       "data": {
         "__scenes": {},
         "type": "create"
+      }
+    },
+    {
+      "id": "578716672:578716672",
+      "data": {
+        "__scenes": {},
+        "type": "remove"
       }
     }
   ]

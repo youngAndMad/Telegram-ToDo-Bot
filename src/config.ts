@@ -1,1 +1,6 @@
 export const TG_TOKEN = ''
+export const TO_DO = '📋 To Do'
+export const COMPLETE = '✅ Complete'
+export const CREATE_TASK = '⚡️ Create Task'
+export const EDIT_TASK = '✏️ Edit Task'
+export const DELETE = '❌ Delete'

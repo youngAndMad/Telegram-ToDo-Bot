@@ -9,9 +9,11 @@ import {
 } from 'nestjs-telegraf'
 import { Telegraf } from 'telegraf'
 import { actionButtons } from './app.buttons'
+import { InlineKeybardMarkup } from 'telegram-bot-api'
 import { AppService } from './app.service'
 import { showList } from './app.utils'
 import { Context } from './context.interface'
+import { COMPLETE, CREATE_TASK, DELETE, EDIT_TASK, TO_DO } from './config'
 
 @Update()
 export class AppUpdate {
@@ -23,43 +25,57 @@ export class AppUpdate {
 	@Start()
 	async startCommand(ctx: Context) {
 		await ctx.reply('Hi! Friend 👋')
-		await ctx.reply('Что ты хочешь сделать?', actionButtons())
+		await ctx.reply('Choose action🙂', actionButtons())
 	}
 
-	@Hears('⚡️ Создать задачу')
+	@Hears(CREATE_TASK)
 	async createTask(ctx: Context) {
 		ctx.session.type = 'create'
-		await ctx.reply('Опиши задачу: ')
+		await ctx.reply('Enter task details: ')
 	}
 
-	@Hears('📋 Список задач')
+	@Hears(TO_DO)
 	async listTask(ctx: Context) {
 		const todos = await this.appService.getAll(ctx.message.from.id)
-		await ctx.reply(showList(todos))
+		await ctx.replyWithHTML(
+			`Your tasks: \n${todos
+				.map(
+					todo =>
+						'id: ' +
+						todo.id +
+						' ' +
+						todo.name +
+						(todo.isCompleted ? ' ✅' : ' 🔘') +
+						'\n'
+				)
+				.join('')}
+				<a  type = "button" style="color:black;cursor:pointer"> Done</a>
+				`
+		)
 	}
 
-	@Hears('✅ Завершить')
+	@Hears(COMPLETE)
 	async doneTask(ctx: Context) {
 		ctx.session.type = 'done'
 		await ctx.deleteMessage()
-		await ctx.reply('Напиши ID задачи: ')
+		await ctx.reply('enter task id: ')
 	}
 
-	@Hears('✏️ Редактирование')
+	@Hears(EDIT_TASK)
 	async editTask(ctx: Context) {
 		ctx.session.type = 'edit'
 		await ctx.deleteMessage()
 		await ctx.replyWithHTML(
-			'Напиши ID и новое название задачи: \n\n' +
-				'В формате - <b>1 | Новое название</b>'
+			'Enter task id and new name : \n\n' +
+				'In format - <b>1 | New name for task</b>'
 		)
 	}
 
-	@Hears('❌ Удаление')
+	@Hears(DELETE)
 	async deleteTask(ctx: Context) {
 		ctx.session.type = 'remove'
 		await ctx.deleteMessage()
-		await ctx.reply('Напиши ID задачи: ')
+		await ctx.reply('Enter task id: ')
 	}
 
 	@On('text')
@@ -68,50 +84,56 @@ export class AppUpdate {
 
 		const user_id = ctx.message.from.id
 
-		if (ctx.session.type === 'create') {
-			const todos = await this.appService.createTask(message, user_id)
-			await ctx.reply(showList(todos))
-		}
-
-		if (ctx.session.type === 'done') {
-			const todos = await this.appService.doneTask(Number(message), user_id)
-
-			if (!todos) {
-				await ctx.deleteMessage()
-				await ctx.reply('Задачи с таким ID не найдено!')
-				return
+		switch (ctx.session.type) {
+			case 'create': {
+				const todos = await this.appService.createTask(message, user_id)
+				await ctx.replyWithHTML(showList(todos))
+				break
 			}
 
-			await ctx.reply(showList(todos))
-		}
+			case 'done': {
+				const todos = await this.appService.doneTask(Number(message), user_id)
 
-		if (ctx.session.type === 'edit') {
-			const [taskId, taskName] = message.split(' | ')
-			const todos = await this.appService.editTask(
-				Number(taskId),
-				taskName,
-				user_id
-			)
+				if (!todos) {
+					await ctx.deleteMessage()
+					await ctx.reply('Taks by id does not found!')
+					return
+				}
 
-			if (!todos) {
-				await ctx.deleteMessage()
-				await ctx.reply('Задачи с таким ID не найдено!')
-				return
+				await ctx.reply(showList(todos))
+				break
 			}
 
-			await ctx.reply(showList(todos))
-		}
+			case 'edit': {
+				const [taskId, taskName] = message.split(' | ')
 
-		if (ctx.session.type === 'remove') {
-			const todos = await this.appService.deleteTask(Number(message), user_id)
+				const todos = await this.appService.editTask(
+					Number(taskId),
+					taskName,
+					user_id
+				)
 
-			if (!todos) {
-				await ctx.deleteMessage()
-				await ctx.reply('Задачи с таким ID не найдено!')
-				return
+				if (!todos) {
+					await ctx.deleteMessage()
+					await ctx.reply('Taks by id does not found!')
+					return
+				}
+
+				await ctx.reply(showList(todos))
+				break
 			}
+			case 'remove': {
+				const todos = await this.appService.deleteTask(Number(message), user_id)
 
-			await ctx.reply(showList(todos))
+				if (!todos) {
+					await ctx.deleteMessage()
+					await ctx.reply('Taks by id does not found!')
+					return
+				}
+
+				await ctx.reply(showList(todos))
+				break
+			}
 		}
 	}
 }

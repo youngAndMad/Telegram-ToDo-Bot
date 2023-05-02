@@ -1,10 +1,17 @@
-export const showList = todos =>
-	`Your tasks: \n\n${todos
+import { TaskEntity } from './task.entity'
+
+export const showList = (todos: TaskEntity[]) => {
+	return `Your tasks: \n${todos
 		.map(
 			todo =>
-				(todo.id + ' ' + todo.isCompleted ? '✅' : '🔘') +
+				'id: ' +
+				todo.id +
 				' ' +
 				todo.name +
-				'\n\n'
+				(todo.isCompleted ? ' ✅' : ' 🔘') +
+				'\n'
 		)
-		.join('')}`
+		.join('')}
+		<button style="color:black"> Done</button>
+		`
+}

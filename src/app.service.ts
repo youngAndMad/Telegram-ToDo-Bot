@@ -19,7 +19,7 @@ export class AppService {
 	}
 
 	async createTask(name: string, user_id: number) {
-		const task = await this.taskRepository.create({ name, user_id })
+		const task = this.taskRepository.create({ name, user_id })
 
 		await this.taskRepository.save(task)
 		return this.getAll(user_id)
@@ -27,7 +27,9 @@ export class AppService {
 
 	async doneTask(id: number, user_id: number) {
 		const task = await this.getById(id)
-		if (!task) return null
+		if (this.checkTaskUserId(task, user_id)) {
+			return false
+		}
 
 		task.isCompleted = !task.isCompleted
 		await this.taskRepository.save(task)
@@ -36,8 +38,9 @@ export class AppService {
 
 	async editTask(id: number, name: string, user_id: number) {
 		const task = await this.getById(id)
-		if (!task) return null
-
+		if (this.checkTaskUserId(task, user_id)) {
+			return false
+		}
 		task.name = name
 		await this.taskRepository.save(task)
 
@@ -46,9 +49,16 @@ export class AppService {
 
 	async deleteTask(id: number, user_id: number) {
 		const task = await this.getById(id)
-		if (!task) return null
+
+		if (this.checkTaskUserId(task, user_id)) {
+			return false
+		}
 
 		await this.taskRepository.delete({ id })
 		return this.getAll(user_id)
+	}
+
+	async checkTaskUserId(task: any, user_id: Number) {
+		return task !== null && task.user_id === user_id
 	}
 }
